@@ -1,9 +1,7 @@
 "use strict";
 const REFRESH_MS = 60000;
 const STALE_MIN = 5;
-const sortKey = {};          // {themeNo: "rate"|"tv"} — 구성종목 정렬 기준 (스펙 §7)
-const openSet = new Set();   // 펼쳐진 테마 no (60초 재렌더 후에도 유지)
-let lastData = null;
+const MAX_STOCKS = 5;   // 테마당 표시 종목 수 (등락률 상위)
 
 function dataUrl() {
   const h = location.hostname;
@@ -15,86 +13,76 @@ function dataUrl() {
   return "./data.json"; // 로컬 테스트
 }
 
-const fmtPct = (v) => v == null ? "-" :
-  `<span class="${v > 0 ? "up" : v < 0 ? "down" : ""}">${v > 0 ? "+" : ""}${v.toFixed(1)}%</span>`;
-const fmtEok = (v) => v == null ? "-" : Math.round(v).toLocaleString("ko-KR");
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) =>
   ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const fmtEok = (v) => v == null ? "-" : Math.round(v).toLocaleString("ko-KR");
+const fmtPrice = (v) => v == null ? "-" : v.toLocaleString("ko-KR");
+const sign = (v) => (v > 0 ? "+" : "");
+const cls = (v) => (v > 0 ? "up" : v < 0 ? "down" : "flat");
 
-function leaderHtml(l, judeok) {
-  const marks = judeok ? (l.isCap ? "🔴" : "") + (l.isBigTv ? "💰" : "") : "";
-  return `<span class="ldr">${esc(l.name)} ${fmtPct(l.rate)}${marks}</span>`;
+// 등락률 → 중앙 기준 막대 (우측=상승 빨강 / 좌측=하락 파랑, ±30% 만점)
+function changeBar(rate) {
+  const pct = Math.max(-30, Math.min(30, rate || 0));
+  const w = (Math.abs(pct) / 30) * 50;   // 0~50%
+  const pos = pct >= 0 ? `left:50%;width:${w}%` : `right:50%;width:${w}%`;
+  return `<div class="bar"><span class="bar-fill ${cls(rate)}" style="${pos}"></span></div>`;
 }
 
-// 구성종목 상세: 정렬 토글 바 + 정렬된 종목 표 (스펙 §7 등락률·거래대금 토글)
-function detailInner(t) {
-  const key = sortKey[t.no] || "rate";
-  const stocks = t.stocks.slice().sort((a, b) =>
-    key === "tv" ? b.tvEok - a.tvEok : b.rate - a.rate);
-  const btn = (k, label) =>
-    `<button class="sortbtn${key === k ? " on" : ""}" data-no="${t.no}" data-key="${k}">${label}</button>`;
-  const rows = stocks.map((s) => `
-    <tr class="stock">
-      <td></td>
-      <td class="left">${s.isCap ? "🔴" : ""}<a href="https://m.stock.naver.com/domestic/stock/${esc(s.code)}/total" target="_blank" rel="noopener">${esc(s.name)}</a></td>
-      <td>${s.price.toLocaleString("ko-KR")}</td>
-      <td>${fmtPct(s.rate)}</td>
-      <td colspan="2">대금 ${fmtEok(s.tvEok)}억</td>
-      <td colspan="3">시총 ${fmtEok(s.capEok)}억</td>
-    </tr>`).join("");
-  return `<div class="sortbar">정렬: ${btn("rate", "등락률순")} ${btn("tv", "거래대금순")}</div><table>${rows}</table>`;
+function stockRow(s, judeokSet, naverSet) {
+  const marks =
+    (judeokSet.has(s.code) ? "👑" : "") +
+    (naverSet.has(s.code) ? "📌" : "") +
+    (s.isCap ? "🔴" : "") +
+    ((s.tvEok || 0) >= 1000 ? "💰" : "");
+  const url = `https://m.stock.naver.com/domestic/stock/${esc(s.code)}/total`;
+  return `
+    <li class="stk">
+      <div class="stk-top">
+        <a class="stk-name" href="${url}" target="_blank" rel="noopener">${esc(s.name)}</a>
+        <span class="marks">${marks}</span>
+        <span class="stk-rate ${cls(s.rate)}">${sign(s.rate)}${(s.rate || 0).toFixed(2)}%</span>
+      </div>
+      <div class="stk-sub">
+        <span>${fmtPrice(s.price)}</span>
+        <span>${fmtEok(s.tvEok)}억</span>
+      </div>
+      ${changeBar(s.rate)}
+    </li>`;
 }
 
-function stockRows(t) {
-  const open = openSet.has(t.no) ? " open" : "";
-  return `<tr class="detail${open}" data-no="${t.no}"><td colspan="9">${detailInner(t)}</td></tr>`;
+function card(t, i) {
+  const judeokSet = new Set((t.judeokLeaders || []).map((l) => l.code));
+  const naverSet = new Set((t.naverLeaders || []).map((l) => l.code));
+  const top = (t.stocks || []).slice(0, MAX_STOCKS);
+  const streak = t.streakDays >= 2 ? ` · 🔥${t.streakDays}일` : "";
+  return `
+    <section class="card">
+      <header class="card-h">
+        <div class="card-title">
+          <span class="rank">${i + 1}</span>
+          <span class="tname">${esc(t.name)}${t.capCount ? ` 🔴×${t.capCount}` : ""}</span>
+        </div>
+        <span class="tval">${fmtEok(t.tradingValueEok)}억</span>
+      </header>
+      <div class="card-stat">
+        <span class="score">${t.score.toFixed(1)}점</span>
+        <span class="chg ${cls(t.changeRate)}">${sign(t.changeRate)}${t.changeRate.toFixed(1)}%</span>
+        <span class="breadth">▲${t.rise} ▬${t.steady} ▼${t.fall}${streak}</span>
+      </div>
+      <ul class="stk-list">${top.map((s) => stockRow(s, judeokSet, naverSet)).join("")}</ul>
+    </section>`;
 }
 
 function render(d) {
-  lastData = d;
   const meta = document.getElementById("meta");
   const upd = new Date(d.updatedAt);
   const ageMin = Math.floor((Date.now() - upd.getTime()) / 60000);
-  const stale = ageMin > STALE_MIN
-    ? ` <span class="stale">⚠ ${ageMin}분 전 데이터</span>` : "";
+  const stale = ageMin > STALE_MIN ? ` <span class="stale">⚠ ${ageMin}분 전 데이터</span>` : "";
   const errs = d.status && !d.status.ok
     ? ` <span class="stale">⚠ 수집 오류 ${d.status.errors.length}건</span>` : "";
   meta.innerHTML = `${upd.toLocaleTimeString("ko-KR")} 기준 · ${esc(d.marketStatus)}${stale}${errs}`;
-
-  document.getElementById("rows").innerHTML = d.themes.map((t, i) => `
-    <tr class="theme" data-no="${t.no}">
-      <td>${i + 1}</td>
-      <td class="left name">${esc(t.name)}${t.capCount ? " 🔴×" + t.capCount : ""}</td>
-      <td class="score">${t.score.toFixed(1)}</td>
-      <td>${fmtPct(t.changeRate)}</td>
-      <td>${t.rise}/${t.steady}/${t.fall}</td>
-      <td>${fmtEok(t.tradingValueEok)}</td>
-      <td>${t.streakDays >= 2 ? "🔥" + t.streakDays + "일" : t.streakDays + "일"}</td>
-      <td class="left">${t.naverLeaders.map((l) => leaderHtml(l, false)).join(" ")}</td>
-      <td class="left">${t.judeokLeaders.map((l) => leaderHtml(l, true)).join(" ")}</td>
-    </tr>
-    ${stockRows(t)}`).join("");
+  document.getElementById("cards").innerHTML = d.themes.map((t, i) => card(t, i)).join("");
 }
-
-// 클릭 위임(#rows에 1회만 바인딩) — 재렌더로 행이 교체돼도 핸들러 유지.
-// 테마 행 클릭=펼침 토글, 정렬 버튼 클릭=해당 상세만 재정렬(펼침·다른 테마 정렬 상태 보존).
-document.getElementById("rows").addEventListener("click", (e) => {
-  const sbtn = e.target.closest("button.sortbtn");
-  if (sbtn) {
-    const no = Number(sbtn.dataset.no);
-    sortKey[no] = sbtn.dataset.key;
-    const t = lastData && lastData.themes.find((x) => x.no === no);
-    const cell = document.querySelector(`tr.detail[data-no="${no}"] td`);
-    if (t && cell) cell.innerHTML = detailInner(t);
-    return;
-  }
-  const row = e.target.closest("tr.theme");
-  if (row) {
-    const no = Number(row.dataset.no);
-    const det = document.querySelector(`tr.detail[data-no="${no}"]`);
-    if (det.classList.toggle("open")) openSet.add(no); else openSet.delete(no);
-  }
-});
 
 async function load() {
   const err = document.getElementById("err");

@@ -8,24 +8,18 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header>
-  <h1>📡 테마레이더</h1>
-  <div id="meta">불러오는 중…</div>
+<header class="top">
+  <div class="top-l">
+    <h1>📡 테마레이더</h1>
+    <span id="meta">불러오는 중…</span>
+  </div>
+  <div class="legend">👑 주덕대장 · 📌 네이버주도 · 🔴 상한 · 💰 1,000억↑</div>
 </header>
 <main>
-  <table id="tbl">
-    <thead>
-      <tr>
-        <th>#</th><th class="left">테마</th><th>점수</th><th>등락</th>
-        <th>상승/보합/하락</th><th>대금(억)</th><th>연속</th>
-        <th class="left">네이버 주도주</th><th class="left">주덕 대장주</th>
-      </tr>
-    </thead>
-    <tbody id="rows"></tbody>
-  </table>
+  <div id="cards" class="grid"></div>
   <p id="err" class="hidden"></p>
 </main>
-<footer>60초 자동 갱신 · 데이터: 네이버 금융 (지연·오류 가능) · 투자 판단 참고용</footer>
+<footer>60초 자동 갱신 · 데이터: 네이버 금융 (지연·오류 가능) · 종목은 등락률 상위 5개 · 투자 판단 참고용</footer>
 <script src="app.js"></script>
 </body>
 </html>

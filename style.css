@@ -1,34 +1,60 @@
-:root { color-scheme: dark; }
 * { box-sizing: border-box; }
 body { margin: 0; font-family: "Malgun Gothic", system-ui, sans-serif;
-       background: #14161a; color: #e8e8e8; font-size: 14px; }
-header { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap;
-         padding: 10px 14px; }
-h1 { font-size: 18px; margin: 0; }
-#meta { color: #9aa0a6; font-size: 12px; }
-.stale { color: #ffb300; font-weight: bold; }
-main { overflow-x: auto; padding: 0 8px 20px; }
-table { border-collapse: collapse; width: 100%; min-width: 760px; }
-th, td { padding: 6px 8px; text-align: right; border-bottom: 1px solid #2a2e35;
-         white-space: nowrap; }
-th.left, td.left { text-align: left; }
-tr.theme { cursor: pointer; }
-tr.theme:hover { background: #1d2128; }
-td.name { font-weight: bold; }
-td.score { color: #7ecbff; font-weight: bold; }
-.up { color: #ff5252; }      /* 국내 관례: 상승=빨강 */
-.down { color: #448aff; }
-.ldr { margin-right: 8px; }
-tr.detail { display: none; }
-tr.detail.open { display: table-row; background: #191c21; }
-tr.detail table { min-width: 0; }
-tr.stock td { border-bottom: 1px solid #22262c; font-size: 13px; }
-.sortbar { padding: 4px 8px; font-size: 12px; color: #9aa0a6; }
-.sortbtn { background: #262b33; color: #cfd3d8; border: 1px solid #363c45;
-           border-radius: 4px; padding: 2px 8px; margin-left: 4px; cursor: pointer;
-           font-size: 12px; }
-.sortbtn.on { background: #2f6ea5; color: #fff; border-color: #3d8bce; }
-a { color: inherit; text-decoration: none; border-bottom: 1px dotted #555; }
-#err { color: #ff8a80; padding: 8px 14px; }
+       background: #eef1f5; color: #1a1d22; font-size: 13px; }
+
+.top { display: flex; justify-content: space-between; align-items: center;
+       flex-wrap: wrap; gap: 8px; padding: 9px 14px; background: #fff;
+       border-bottom: 1px solid #dde1e7; position: sticky; top: 0; z-index: 5; }
+.top-l { display: flex; align-items: baseline; gap: 10px; }
+h1 { font-size: 17px; margin: 0; }
+#meta { color: #6b7280; font-size: 12px; }
+.legend { color: #6b7280; font-size: 11px; }
+.stale { color: #d97706; font-weight: bold; }
+
+main { padding: 12px; }
+.grid { display: grid; gap: 10px;
+        grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); }
+
+.card { background: #fff; border: 1px solid #e2e6ec; border-radius: 10px;
+        overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+.card-h { display: flex; justify-content: space-between; align-items: center;
+          gap: 8px; padding: 8px 10px; background: #2f6ea5; color: #fff; }
+.card-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.rank { background: rgba(255,255,255,.22); border-radius: 5px; padding: 1px 7px;
+        font-weight: bold; font-size: 12px; flex: none; }
+.tname { font-weight: bold; font-size: 14px;
+         white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tval { font-size: 12px; font-weight: bold; white-space: nowrap; flex: none; }
+
+.card-stat { display: flex; align-items: center; gap: 8px; padding: 5px 10px;
+             background: #f7f9fb; border-bottom: 1px solid #eef1f5; font-size: 12px; }
+.score { font-weight: bold; color: #2f6ea5; }
+.breadth { color: #6b7280; margin-left: auto; font-size: 11px; white-space: nowrap; }
+
+.stk-list { list-style: none; margin: 0; padding: 3px 0; }
+.stk { padding: 5px 10px; border-top: 1px solid #f2f4f7; }
+.stk:first-child { border-top: none; }
+.stk-top { display: flex; align-items: baseline; gap: 5px; }
+.stk-name { font-weight: 600; color: #1a1d22; text-decoration: none;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.marks { font-size: 11px; flex: none; }
+.stk-rate { font-weight: bold; white-space: nowrap; margin-left: auto; flex: none; }
+.stk-sub { display: flex; justify-content: space-between;
+           color: #6b7280; font-size: 11px; margin-top: 1px; }
+
+.up { color: #e5342b; }     /* 국내 관례: 상승 = 빨강 */
+.down { color: #1d6fd6; }   /* 하락 = 파랑 */
+.flat { color: #6b7280; }
+
+.bar { position: relative; height: 4px; background: #eef1f5;
+       border-radius: 2px; margin-top: 4px; }
+.bar::before { content: ""; position: absolute; left: 50%; top: -1px;
+               height: 6px; width: 1px; background: #c3c9d2; }
+.bar-fill { position: absolute; top: 0; height: 100%; border-radius: 2px; }
+.bar-fill.up { background: #e5342b; }
+.bar-fill.down { background: #1d6fd6; }
+.bar-fill.flat { background: #c3c9d2; }
+
+#err { color: #c0392b; padding: 8px 14px; }
 .hidden { display: none; }
-footer { color: #6b7178; font-size: 11px; padding: 10px 14px; }
+footer { color: #8a919b; font-size: 11px; padding: 10px 14px; text-align: center; }
