@@ -20,33 +20,17 @@ const fmtPrice = (v) => v == null ? "-" : v.toLocaleString("ko-KR");
 const sign = (v) => (v > 0 ? "+" : "");
 const cls = (v) => (v > 0 ? "up" : v < 0 ? "down" : "flat");
 
-// 등락률 → 중앙 기준 막대 (고저 없을 때 fallback)
-function changeBar(rate) {
-  const pct = Math.max(-30, Math.min(30, rate || 0));
+// 일봉 표시(최초 그림): 중앙 검정 세로줄 기준 등락률 막대 — 오른쪽 빨강=양봉, 왼쪽 파랑=음봉 (±30% 만점)
+// 시/고/저/현재 상세값은 툴팁으로 제공
+function changeBar(s) {
+  const rate = s.rate || 0;
+  const pct = Math.max(-30, Math.min(30, rate));
   const w = (Math.abs(pct) / 30) * 50;   // 0~50%
   const pos = pct >= 0 ? `left:50%;width:${w}%` : `right:50%;width:${w}%`;
-  return `<div class="bar"><span class="bar-fill ${cls(rate)}" style="${pos}"></span></div>`;
-}
-
-// 캔들 막대: 가는 색 줄 = 오늘 고가~저가(윗/아랫꼬리), 굵은 몸통 = 시가→현재가,
-// 검정 세로줄 = 시가 (이 선 기준 오른쪽 몸통=양봉/빨강, 왼쪽=음봉/파랑)
-function candleBar(s) {
-  const low = s.low, high = s.high, cur = s.price;
-  const ref = s.open != null ? s.open : s.prevClose;   // 기준선: 시가(없으면 전일종가)
-  if (low == null || high == null || ref == null || high <= low) return changeBar(s.rate);
-  const lo = Math.min(low, ref), hi = Math.max(high, ref);
-  const span = (hi - lo) || 1;
-  const P = (x) => Math.max(0, Math.min(100, ((x - lo) / span) * 100));
-  const k = cur >= ref ? "up" : "down";               // 양봉/음봉 = 시가 대비
-  const wl = P(low), ww = P(high) - P(low);
-  const a = P(ref), b = P(cur);
-  const bl = Math.min(a, b), bw = Math.max(1.5, Math.abs(b - a));
-  const tip = `시 ${fmtPrice(ref)} / 고 ${fmtPrice(high)} / 저 ${fmtPrice(low)} / 현재 ${fmtPrice(cur)}`;
-  return `<div class="cbar" title="${tip}">
-      <span class="wick ${k}" style="left:${wl}%;width:${ww}%"></span>
-      <span class="cbody ${k}" style="left:${bl}%;width:${bw}%"></span>
-      <span class="oline" style="left:${a}%"></span>
-    </div>`;
+  const tip = (s.high != null && s.low != null)
+    ? ` title="${s.open != null ? `시 ${fmtPrice(s.open)} / ` : ""}고 ${fmtPrice(s.high)} / 저 ${fmtPrice(s.low)} / 현재 ${fmtPrice(s.price)}"`
+    : "";
+  return `<div class="bar"${tip}><span class="bar-fill ${cls(rate)}" style="${pos}"></span></div>`;
 }
 
 function stockRow(s, judeokSet, naverSet) {
@@ -67,7 +51,7 @@ function stockRow(s, judeokSet, naverSet) {
         <span>${fmtPrice(s.price)}</span>
         <span>${fmtEok(s.tvEok)}억</span>
       </div>
-      ${candleBar(s)}
+      ${changeBar(s)}
     </li>`;
 }
 

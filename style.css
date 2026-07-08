@@ -53,23 +53,16 @@ main { padding: 12px; }
 .down { color: #1d6fd6; }   /* 하락 = 파랑 */
 .flat { color: #6b7280; }
 
-.bar { position: relative; height: 4px; background: #eef1f5;
+/* 일봉 표시(최초 그림): 중앙 검정 세로줄 기준 등락률 막대 (우=양봉 빨강, 좌=음봉 파랑) */
+.bar { position: relative; height: 5px; background: #eef1f5;
        border-radius: 2px; margin-top: 4px; }
-.bar::before { content: ""; position: absolute; left: 50%; top: -1px;
-               height: 6px; width: 1px; background: #c3c9d2; }
+.bar::before { content: ""; position: absolute; left: 50%; top: -2px;
+               height: 9px; width: 2px; background: #1a1d22;
+               transform: translateX(-50%); }  /* 양봉/음봉 가르는 검정 세로줄 */
 .bar-fill { position: absolute; top: 0; height: 100%; border-radius: 2px; }
 .bar-fill.up { background: #e5342b; }
 .bar-fill.down { background: #1d6fd6; }
 .bar-fill.flat { background: #c3c9d2; }
-
-/* 캔들: 가는 색 줄=고저 꼬리, 굵은 몸통=시가->현재, 검정 세로줄=시가(양봉/음봉 기준) */
-.cbar { position: relative; height: 11px; margin-top: 4px; }
-.wick { position: absolute; top: 5px; height: 1.5px; border-radius: 1px; }
-.cbody { position: absolute; top: 1.5px; height: 8px; border-radius: 1px; min-width: 2px; }
-.wick.up, .cbody.up { background: #e5342b; }
-.wick.down, .cbody.down { background: #1d6fd6; }
-.oline { position: absolute; top: 0; height: 11px; width: 2px; background: #1a1d22;
-         transform: translateX(-50%); }
 
 /* 상한가 종목 행 강조 (사진의 노란 배경) */
 .stk.cap { background: #fff6c8; }
