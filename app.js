@@ -40,7 +40,7 @@ function candleBar(s) {
   const a = P(prev), b = P(cur);
   const bl = Math.min(a, b), bw = Math.max(1.2, Math.abs(b - a));
   return `<div class="cbar" title="고 ${fmtPrice(high)} / 저 ${fmtPrice(low)} / 전일 ${fmtPrice(prev)}">
-      <span class="wick ${k}" style="left:${wl}%;width:${ww}%"></span>
+      <span class="wick" style="left:${wl}%;width:${ww}%"></span>
       <span class="cbody ${k}" style="left:${bl}%;width:${bw}%"></span>
     </div>`;
 }
@@ -53,7 +53,7 @@ function stockRow(s, judeokSet, naverSet) {
     ((s.tvEok || 0) >= 1000 ? "💰" : "");
   const url = `https://m.stock.naver.com/domestic/stock/${esc(s.code)}/total`;
   return `
-    <li class="stk">
+    <li class="stk${s.isCap ? " cap" : ""}">
       <div class="stk-top">
         <a class="stk-name" href="${url}" target="_blank" rel="noopener">${esc(s.name)}</a>
         <span class="marks">${marks}</span>

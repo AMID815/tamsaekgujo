@@ -18,7 +18,7 @@ main { padding: 12px; }
 .card { background: #fff; border: 1px solid #e2e6ec; border-radius: 10px;
         overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
 .card-h { display: flex; justify-content: space-between; align-items: center;
-          gap: 8px; padding: 8px 10px; background: #2f6ea5; color: #fff; }
+          gap: 8px; padding: 8px 10px; background: #00b1a9; color: #fff; }  /* 마켓중심 민트 */
 .card-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .rank { background: rgba(255,255,255,.22); border-radius: 5px; padding: 1px 7px;
         font-weight: bold; font-size: 12px; flex: none; }
@@ -26,11 +26,12 @@ main { padding: 12px; }
          white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .alias { flex: none; font-size: 11px; font-weight: normal; cursor: help;
          background: rgba(255,255,255,.22); border-radius: 4px; padding: 0 5px; }
-.tval { font-size: 12px; font-weight: bold; white-space: nowrap; flex: none; }
+.tval { font-size: 12px; font-weight: 800; white-space: nowrap; flex: none;
+        background: #fff; color: #e5342b; border-radius: 8px; padding: 2px 8px; }  /* 사진의 흰 알약+빨간 대금 */
 
 .card-stat { display: flex; align-items: center; gap: 8px; padding: 5px 10px;
              background: #f7f9fb; border-bottom: 1px solid #eef1f5; font-size: 12px; }
-.score { font-weight: bold; color: #2f6ea5; }
+.score { font-weight: bold; color: #009a93; }
 .breadth { color: #6b7280; margin-left: auto; font-size: 11px; white-space: nowrap; }
 
 .stk-list { list-style: none; margin: 0; padding: 3px 0; }
@@ -61,12 +62,15 @@ main { padding: 12px; }
 .bar-fill.down { background: #1d6fd6; }
 .bar-fill.flat { background: #c3c9d2; }
 
-/* 캔들: 가는 줄=고저 꼬리, 굵은 몸통=전일->현재 */
-.cbar { position: relative; height: 8px; margin-top: 4px; }
-.wick { position: absolute; top: 3.5px; height: 1px; border-radius: 1px; }
-.cbody { position: absolute; top: 1px; height: 6px; border-radius: 1px; min-width: 1px; }
-.wick.up, .cbody.up { background: #e5342b; }
-.wick.down, .cbody.down { background: #1d6fd6; }
+/* 캔들(마켓중심 방식): 가는 검정 범위선=고저 꼬리, 굵은 몸통=전일->현재 */
+.cbar { position: relative; height: 11px; margin-top: 4px; }
+.wick { position: absolute; top: 5px; height: 1.5px; background: #2b2e33; }
+.cbody { position: absolute; top: 1px; height: 9px; border-radius: 1px; min-width: 2px; }
+.cbody.up { background: #e5342b; }
+.cbody.down { background: #1d6fd6; }
+
+/* 상한가 종목 행 강조 (사진의 노란 배경) */
+.stk.cap { background: #fff6c8; }
 
 #err { color: #c0392b; padding: 8px 14px; }
 .hidden { display: none; }
