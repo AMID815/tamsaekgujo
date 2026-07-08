@@ -21,16 +21,24 @@ const sign = (v) => (v > 0 ? "+" : "");
 const cls = (v) => (v > 0 ? "up" : v < 0 ? "down" : "flat");
 
 // 일봉 표시(최초 그림): 중앙 검정 세로줄 기준 등락률 막대 — 오른쪽 빨강=양봉, 왼쪽 파랑=음봉 (±30% 만점)
-// 시/고/저/현재 상세값은 툴팁으로 제공
+// 가는 회색 선 = 오늘 고가~저가 범위(같은 % 눈금) — 굵은 막대 밖으로 나온 부분이 윗/아랫꼬리
 function changeBar(s) {
+  const clamp30 = (v) => Math.max(-30, Math.min(30, v));
+  const X = (p) => 50 + (p / 30) * 50;   // 등락률% → 트랙 위치%
   const rate = s.rate || 0;
-  const pct = Math.max(-30, Math.min(30, rate));
+  const pct = clamp30(rate);
   const w = (Math.abs(pct) / 30) * 50;   // 0~50%
   const pos = pct >= 0 ? `left:50%;width:${w}%` : `right:50%;width:${w}%`;
+  let range = "";
+  if (s.high != null && s.low != null && s.prevClose) {
+    const hx = X(clamp30((s.high / s.prevClose - 1) * 100));
+    const lx = X(clamp30((s.low / s.prevClose - 1) * 100));
+    range = `<span class="range" style="left:${lx}%;width:${Math.max(0.5, hx - lx)}%"></span>`;
+  }
   const tip = (s.high != null && s.low != null)
     ? ` title="${s.open != null ? `시 ${fmtPrice(s.open)} / ` : ""}고 ${fmtPrice(s.high)} / 저 ${fmtPrice(s.low)} / 현재 ${fmtPrice(s.price)}"`
     : "";
-  return `<div class="bar"${tip}><span class="bar-fill ${cls(rate)}" style="${pos}"></span></div>`;
+  return `<div class="bar"${tip}>${range}<span class="bar-fill ${cls(rate)}" style="${pos}"></span></div>`;
 }
 
 function stockRow(s, judeokSet, naverSet) {
