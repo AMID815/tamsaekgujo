@@ -97,6 +97,8 @@ function card(t, i) {
     </section>`;
 }
 
+const pad2 = (n) => String(n).padStart(2, "0");
+
 function render(d) {
   const meta = document.getElementById("meta");
   const upd = new Date(d.updatedAt);
@@ -104,7 +106,8 @@ function render(d) {
   const stale = ageMin > STALE_MIN ? ` <span class="stale">⚠ ${ageMin}분 전 데이터</span>` : "";
   const errs = d.status && !d.status.ok
     ? ` <span class="stale">⚠ 수집 오류 ${d.status.errors.length}건</span>` : "";
-  meta.innerHTML = `${upd.toLocaleTimeString("ko-KR", {hour12: false})} 기준 · ${esc(d.marketStatus)}${stale}${errs}`;
+  const hhmmss = `${pad2(upd.getHours())}:${pad2(upd.getMinutes())}:${pad2(upd.getSeconds())}`;
+  meta.innerHTML = `${hhmmss} 기준 · ${esc(d.marketStatus)}${stale}${errs}`;
   document.getElementById("cards").innerHTML = d.themes.map((t, i) => card(t, i)).join("");
 }
 
