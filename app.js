@@ -82,41 +82,28 @@ function stockRow(s, judeokSet, naverSet) {
     </li>`;
 }
 
-// 크로스테마 주도주: 네이버 주도주로 여러 테마에 오른 종목 — 맨 끝 카드 3장(4종목씩)
-function crossRow(c) {
+// 크로스테마 주도주는 헤더 티커로 표시 (카드는 2026-07-11 사용자 요청으로 삭제)
+// 테마명 괄호 부연 제거("NFT(대체불가토큰)"→"NFT"). 단 제거 후 표시 목록 안에서
+// 이름이 겹치면(예: 2차전지 / 2차전지(장비)) 괄호를 유지해 구분.
+function shortThemes(themes) {
+  const bases = themes.map((t) => t.replace(/\s*\([^)]*\)/g, "").trim() || t);
+  return themes.map((t, i) =>
+    bases.some((b, j) => j !== i && b === bases[i]) ? t : bases[i]);
+}
+
+// 티커 항목 몸통 — 카드 행과 동일 배치(이름줄/테마줄/NXT·시간외 시세줄)
+function crossRowBody(c) {
   const url = `https://m.stock.naver.com/domestic/stock/${esc(c.code)}/total`;
   const rate = c.rate != null
     ? `<span class="xrate ${cls(c.rate)}">${sign(c.rate)}${c.rate.toFixed(2)}%</span>` : "";
-  const themes = c.themes.slice(0, 4).join(", ") + (c.count > 4 ? " 외" : "");
-  return `
-    <li class="stk">
-      <div class="stk-top">
+  const themes = shortThemes(c.themes.slice(0, 3)).join(", ") + (c.count > 3 ? " 외" : "");
+  return `<div class="stk-top">
         <a class="stk-name" href="${url}" target="_blank" rel="noopener">${esc(c.name)}</a>
-        ${NB}<span class="xcnt">×${c.count}</span>
+        <span class="xcnt">×${c.count}</span>
         ${rate}
       </div>
       <div class="xthemes">${esc(themes)}</div>
-      ${extLine(c.nxt)}${otLine(c.ot)}
-    </li>`;
-}
-
-function crossCards(d) {
-  const items = d.crossLeaders || [];
-  if (!items.length) return "";
-  const out = [];
-  for (let i = 0; i < items.length && i < 20; i += 5) {
-    const part = items.slice(i, i + 5);
-    out.push(`
-      <section class="card cross">
-        <header class="card-h">
-          <div class="card-title"><span class="tname">🔀 크로스테마 주도주 ${i / 5 + 1}</span></div>
-          <span class="tval">오늘 ${d.crossTotal}종목</span>
-        </header>
-        <div class="card-stat"><span class="xdesc">여러 테마를 동시에 이끄는 종목 · ${i + 1}~${i + part.length}위</span></div>
-        <ul class="stk-list">${part.map(crossRow).join("")}</ul>
-      </section>`);
-  }
-  return out.join("");
+      ${extLine(c.nxt)}${otLine(c.ot)}`;
 }
 
 function card(t, i) {
@@ -163,6 +150,25 @@ const isMarketHoursKST = () => inWindowKST(540, 935);
 // NXT 거래시간대(평일 08:00~20:05) — 이 밖이면 extOpen 데이터가 남아있어도 CLOSE 표기
 const isNxtHoursKST = () => inWindowKST(480, 1205);
 
+// 헤더 티커: 크로스테마 주도주 전광판 — 카드 행과 동일한 3줄 블록이 왼쪽으로 흐름.
+// 내용이 실제로 바뀔 때만 재구성(60초 갱신 시 애니메이션 튐 방지). 속도는 픽셀 기준 일정.
+let tkSig = "";
+function renderTicker(d) {
+  const box = document.getElementById("xticker");
+  if (!box) return;
+  const items = d.crossLeaders || [];
+  if (!items.length) { box.classList.add("hidden"); tkSig = ""; return; }
+  const sig = items.map((c) => `${c.code}:${c.rate}:${c.count}:${c.ot && c.ot.price}:${c.nxt && c.nxt.price}`).join("|");
+  if (sig === tkSig) { box.classList.remove("hidden"); return; }
+  tkSig = sig;
+  const one = items.map((c) => `<span class="tk-item">${crossRowBody(c)}</span>`).join("");
+  const track = document.getElementById("tkTrack");
+  track.innerHTML = `<span class="tk-copy">${one}</span><span class="tk-copy">${one}</span>`;
+  box.classList.remove("hidden");
+  const half = track.scrollWidth / 2;               // 한 벌 길이(px)
+  track.style.animationDuration = `${Math.max(30, Math.round(half / 80))}s`;
+}
+
 function render(d) {
   const meta = document.getElementById("meta");
   const upd = new Date(d.updatedAt);
@@ -176,7 +182,8 @@ function render(d) {
     : (d.extOpen && isNxtHoursKST() ? "NXT OPEN" : "CLOSE");
   meta.innerHTML = `${hhmmss} 기준 · ${esc(statusText)}${stale}${errs}`;
   document.getElementById("cards").innerHTML =
-    d.themes.map((t, i) => card(t, i)).join("") + crossCards(d);
+    d.themes.map((t, i) => card(t, i)).join("");
+  renderTicker(d);
 }
 
 async function load() {
