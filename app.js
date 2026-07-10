@@ -113,7 +113,7 @@ function render(d) {
   const upd = new Date(d.updatedAt);
   const ageMin = Math.floor((Date.now() - upd.getTime()) / 60000);
   const stale = (ageMin > STALE_MIN && isMarketHoursKST())
-    ? ` <span class="syspaused">⚠ SYSTEM PAUSED — no updates for ${ageMin} min</span>` : "";
+    ? ` <span class="syspaused">⚠ SYSTEM PAUSED</span>` : "";
   const errs = d.status && !d.status.ok
     ? ` <span class="stale">⚠ 수집 오류 ${d.status.errors.length}건</span>` : "";
   const hhmmss = `${pad2(upd.getHours())}:${pad2(upd.getMinutes())}:${pad2(upd.getSeconds())}`;
