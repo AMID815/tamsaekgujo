@@ -133,6 +133,7 @@ function card(t, i) {
         <span class="score">${t.score.toFixed(1)}점</span>
         <span class="chg ${cls(t.changeRate)}">${sign(t.changeRate)}${t.changeRate.toFixed(1)}%</span>
         <span class="breadth">▲${t.rise} ▬${t.steady} ▼${t.fall}${streak}</span>
+        ${(t.supplyCount || 0) > 0 ? `<span class="supply" title="외국인+기관 동반 순매수 종목 수(최근 확인 기준)">🏦${t.supplyCount}</span>` : ""}
       </div>
       <ul class="stk-list">${top.map((s) => stockRow(s, judeokSet, naverSet)).join("")}</ul>
     </section>`;
@@ -173,9 +174,10 @@ function histRowBody(r) {
 // 개별 급등: (a) 저유동 카드에서 살린 강한 종목, (b) 뉴스로 혼자 뛴 개별이슈(촉매 표시)
 function indivRowBody(r) {
   const url = `https://m.stock.naver.com/domestic/stock/${esc(r.code)}/total`;
-  const label = r.catalyst
+  const label = (r.catalyst
     ? `뉴스 급등: ${esc(r.catalyst)}`
-    : `${r.theme ? esc(r.theme) + " · " : ""}개별 급등`;
+    : `${r.theme ? esc(r.theme) + " · " : ""}개별 급등`)
+    + (r.supplyWeak ? ` · <b class="supdn">수급↓</b>` : "");
   const badge = r.catalyst ? "⚡뉴스" : "개별";
   return `<div class="stk-top">
         <a class="stk-name" href="${url}" target="_blank" rel="noopener">${esc(r.name)}</a>

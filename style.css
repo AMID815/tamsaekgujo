@@ -137,6 +137,11 @@ footer { color: #8a919b; font-size: 11px; padding: 10px 14px; text-align: center
 .tk-hist .stk-name { color: #6b7280; }
 .tk-hist .xcnt { background: #fde68a; color: #92400e; }
 
+/* 수급 뱃지(카드): 외국인+기관 동반 순매수 종목 수 / 수급↓(티커): 동반 매도 */
+.supply { font-size: 11.5px; font-weight: 800; color: #0f766e;
+          background: #ccfbf1; border-radius: 8px; padding: 0 6px; flex: none; }
+.supdn { color: #1d6fd6; font-weight: 800; font-style: normal; }
+
 /* 뉴스 급등 개별이슈(티커) — 지나치기 쉬워 반짝(글로우 펄스)으로 시선 유도 */
 .tk-news .stk-name { color: #b91c1c; font-weight: 800; }
 .tk-news .xcnt { background: #ff5722; color: #fff;
