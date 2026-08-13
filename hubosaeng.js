@@ -16,6 +16,11 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) =>
   ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 const sign = (v) => (v > 0 ? "+" : "");
 const cls = (v) => (v > 0 ? "up" : v < 0 ? "down" : "flat");
+// 인덱스는 남이 만든 JSON — '__proto__'·'constructor' 같은 키가 상속 멤버로
+// 잡히지 않도록 소유 속성만 본다
+const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+// 검색 정규화: 대소문자·공백 무시 ('cjcgv'로 'CJ CGV'를 찾을 수 있게)
+const searchKey = (s) => String(s).toLowerCase().replace(/\s+/g, "");
 
 const SRC = {
   nepcon: {label: "네프콘", badge: "b-nepcon"},
@@ -34,54 +39,76 @@ function fmtDW(d) {
 const EMPTY_GUIDE = document.getElementById("empty").innerHTML;
 
 let IDX = null;   // {built, coverage, stocks}
-let LIST = [];    // [{code, name, n}] — 자동완성용 (인덱스 내 이름)
+let LIST = [];    // [{code, name, n, key}] — 자동완성용 (인덱스 내 이름)
 let selIdx = -1;  // 자동완성 키보드 선택 위치
 let picked = false;  // 검색 확정 상태 — 다시 포커스하면 지우고 새로 입력받는다
                      // (직접 친 미확정 글자는 탭 전환 등으로 포커스가 돌아와도 보존)
 
 // ── 검색/자동완성 ───────────────────────────────────────────────────
+// 이름이 겹칠 때 뭘 먼저 보여줄지 — 이력이 많은(= 사용자가 찾을 법한) 종목 우선.
+// 이게 없으면 '삼성'+Enter가 가나다 첫 항목인 삼성공조로 간다.
+const byRelevance = (a, b) =>
+  b.n - a.n || a.name.length - b.name.length || a.name.localeCompare(b.name, "ko");
+
 function candidates(q) {
-  q = q.trim();
-  if (!q) return [];
-  const lower = q.toLowerCase();
-  if (/^\d{2,6}$/.test(q)) {
-    return LIST.filter((s) => s.code.startsWith(q)).slice(0, 8);
+  const key = searchKey(q || "");
+  if (!key) return [];
+  // 종목코드는 대부분 6자리 숫자지만 0039P0처럼 영문이 섞인 것도 있다
+  if (/^[0-9][0-9a-z]{1,5}$/.test(key)) {
+    const hit = LIST.filter((s) => s.code.toLowerCase().startsWith(key));
+    if (hit.length) return hit.sort(byRelevance).slice(0, 8);
+    // 코드로 안 잡히면 이름 검색으로 폴백 (숫자로 시작하는 종목명 대비)
   }
-  const starts = [], contains = [];
+  const exact = [], starts = [], contains = [];
   for (const s of LIST) {
-    const n = s.name.toLowerCase();
-    if (n.startsWith(lower)) starts.push(s);
-    else if (n.includes(lower)) contains.push(s);
+    if (s.key === key) exact.push(s);
+    else if (s.key.startsWith(key)) starts.push(s);
+    else if (s.key.includes(key)) contains.push(s);
   }
-  return starts.concat(contains).slice(0, 8);
+  for (const bucket of [exact, starts, contains]) bucket.sort(byRelevance);
+  return exact.concat(starts, contains).slice(0, 8);
 }
 
 function renderSuggest(items, q) {
   const box = document.getElementById("suggest");
+  const input = document.getElementById("q");
   selIdx = -1;
+  input.removeAttribute("aria-activedescendant");
   if (!items.length) {
-    // 친 글자가 있는데 후보가 없으면 침묵하지 않고 이유를 알린다
+    // 친 글자가 있는데 후보가 없으면 침묵하지 않고 이유를 알린다.
+    // 단 인덱스를 못 불러온 상태를 '이력 없음'으로 오도하면 안 된다.
     if (q && q.trim()) {
-      box.innerHTML = `<li class="sg-none">일치하는 종목이 없습니다` +
-        `<span class="sg-none-sub">테마 이력이 쌓인 종목만 검색됩니다</span></li>`;
+      box.innerHTML = IDX
+        ? `<li class="sg-none" role="status">일치하는 종목이 없습니다` +
+          `<span class="sg-none-sub">테마 이력이 쌓인 종목만 검색됩니다</span></li>`
+        : `<li class="sg-none" role="status">데이터를 불러오지 못했습니다` +
+          `<span class="sg-none-sub">잠시 후 새로고침해 주세요</span></li>`;
       box.classList.remove("hidden");
+      input.setAttribute("aria-expanded", "true");
     } else {
       box.classList.add("hidden");
       box.innerHTML = "";
+      input.setAttribute("aria-expanded", "false");
     }
     return;
   }
-  box.innerHTML = items.map((s) =>
-    `<li data-code="${esc(s.code)}"><span class="sg-name">${esc(s.name)}</span>` +
+  box.innerHTML = items.map((s, i) =>
+    `<li id="sg-${i}" role="option" aria-selected="false" data-code="${esc(s.code)}">` +
+    `<span class="sg-name">${esc(s.name)}</span>` +
     `<span class="sg-code">${esc(s.code)}</span><span class="sg-n">${s.n}건</span></li>`).join("");
   box.classList.remove("hidden");
+  input.setAttribute("aria-expanded", "true");
 }
 
 function moveSel(delta) {
   const lis = [...document.querySelectorAll("#suggest li[data-code]")];
   if (!lis.length) return;
   selIdx = (selIdx + delta + lis.length) % lis.length;
-  lis.forEach((li, i) => li.classList.toggle("on", i === selIdx));
+  lis.forEach((li, i) => {
+    li.classList.toggle("on", i === selIdx);
+    li.setAttribute("aria-selected", i === selIdx ? "true" : "false");
+  });
+  document.getElementById("q").setAttribute("aria-activedescendant", lis[selIdx].id);
 }
 
 // ── 타임라인 렌더 ───────────────────────────────────────────────────
@@ -89,28 +116,42 @@ function eventRow(e) {
   const src = SRC[e.src] || {label: e.src, badge: ""};
   const dim = e.ind ? " dim" : "";
   let theme = e.theme || "";
-  if (e.src === "sector" && theme) theme = "#" + theme;
+  if (e.src === "sector" && theme && !e.ind) theme = "#" + theme;
   if (e.dn) theme += " ↓하락";
   const themeHtml = theme
     ? `<span class="tl-theme${dim}${e.dn ? " down" : ""}">${esc(theme)}</span>` : "";
+  // 뉴스 rate는 종가가 아니라 기사 수신 시각 스냅샷 — 같은 날 다른 소스의 종가
+  // 등락률과 나란히 놓이므로 출처를 밝혀야 오독하지 않는다
+  const note = e.nt
+    ? `<span class="tl-note" title="비거래일에 수신된 뉴스 - 등락률 없음">주말</span>`
+    : (e.src === "news" && e.rate != null
+        ? `<span class="tl-note" title="기사 수신 시각 기준 - 종가 등락률이 아닙니다">기사시점</span>`
+        : "");
   const rate = e.rate != null
     ? `<span class="tl-rate ${cls(e.rate)}">${sign(e.rate)}${e.rate.toFixed(2)}%</span>` : "";
   const cat = e.cat ? `<span class="tl-cat">${esc(e.cat)}</span>` : "";
   return `<li><span class="badge ${src.badge}${dim}">${src.label}</span>` +
-         `${themeHtml}${rate}${cat}</li>`;
+         `${themeHtml}${rate}${note}${cat}</li>`;
 }
+
+// 표기가 흔들린 같은 테마의 대표 이름 — '일부 X'보다 'X'를, 그다음 자주 쓰인 표기를
+const pickThemeName = (names) => [...names.entries()].sort((a, b) =>
+  (a[0].startsWith("일부") - b[0].startsWith("일부")) || b[1] - a[1] ||
+  a[0].length - b[0].length)[0][0];
 
 function topThemes(events) {
   const cnt = new Map();
   for (const e of events) {
-    if (!e.theme || e.ind) continue;
-    const key = e.theme.replace(/\s+/g, "");
-    const cur = cnt.get(key) || {name: e.theme, days: new Set()};
+    // tk = 빌더가 넣은 정규화 키('일부 화장품'과 '화장품'이 같은 키). 없으면 집계 제외
+    if (!e.tk || e.ind) continue;
+    const cur = cnt.get(e.tk) || {names: new Map(), days: new Set()};
     cur.days.add(e.d);
-    cnt.set(key, cur);
+    const raw = e.theme || e.tk;
+    cur.names.set(raw, (cur.names.get(raw) || 0) + 1);
+    cnt.set(e.tk, cur);
   }
   return [...cnt.values()]
-    .map((v) => ({name: v.name, n: v.days.size}))
+    .map((v) => ({name: pickThemeName(v.names), n: v.days.size}))
     .sort((a, b) => b.n - a.n).slice(0, 4);
 }
 
@@ -119,23 +160,28 @@ function showNoResult(q) {
   document.getElementById("suggest").classList.add("hidden");
   document.getElementById("result").classList.add("hidden");
   const box = document.getElementById("empty");
-  box.className = "empty warn";
+  // 내용을 먼저 채운 뒤 스타일을 바꾼다 — 중간에 예외가 나도 안내문이
+  // '경고 카드 옷을 입은 소개문'으로 남지 않게
   box.innerHTML =
     `<b>‘${esc(q)}’의 테마 이력을 찾지 못했습니다.</b><br>` +
     `수집 기간(${esc(coverageSpan())}) 동안 특징테마·주도섹터·뉴스·마감 스냅샷 ` +
     `어디에도 오르지 않은 종목이거나, 종목명이 정확하지 않을 수 있습니다.<br>` +
     `이름 일부(예: ‘기가’)나 6자리 코드로도 찾을 수 있습니다.`;
-  box.classList.remove("hidden");
+  box.className = "empty warn";
 }
 
 function selectStock(code) {
-  const st = IDX.stocks[code];
-  if (!st) return;
+  const st = IDX && has(IDX.stocks, code) ? IDX.stocks[code] : null;
+  if (!st || !Array.isArray(st.events) || !st.events.length) {
+    showNoResult(code);
+    return;
+  }
   document.getElementById("suggest").classList.add("hidden");
+  document.getElementById("q").setAttribute("aria-expanded", "false");
   document.getElementById("q").value = st.name;
   const box = document.getElementById("empty");
-  box.className = "empty hidden";
   box.innerHTML = EMPTY_GUIDE;   // 안내문 원복 — 다음 빈손 검색에서 다시 쓰인다
+  box.className = "empty hidden";
 
   const url = `https://m.stock.naver.com/domestic/stock/${esc(code)}/total`;
   document.getElementById("rname").innerHTML =
@@ -158,12 +204,13 @@ function selectStock(code) {
       `<ul class="tl-ev">${evs.map(eventRow).join("")}</ul></div>`).join("");
   document.getElementById("result").classList.remove("hidden");
   picked = true;
-  history.replaceState(null, "", `?q=${code}`);
+  history.replaceState(null, "", `?q=${encodeURIComponent(code)}`);
 }
 
 // ── 초기화 ──────────────────────────────────────────────────────────
 // 4개 소스를 통틀어 데이터가 존재하는 전체 구간 (안내문에 쓴다)
 function coverageSpan() {
+  if (!IDX) return "수집 기간 미상";
   const ds = Object.values(IDX.coverage || {})
     .filter((v) => v && v.n).flatMap((v) => [v.first, v.last]).filter(Boolean);
   if (!ds.length) return "수집 기간 미상";
@@ -187,14 +234,20 @@ async function init() {
   try {
     const r = await fetch(`${indexUrl()}?ts=${Date.now()}`, {cache: "no-store"});
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    IDX = await r.json();
-    LIST = Object.entries(IDX.stocks)
-      .map(([code, s]) => ({code, name: s.name, n: s.events.length}))
-      .sort((a, b) => a.name.localeCompare(b.name, "ko"));
+    const data = await r.json();
+    if (!data || typeof data !== "object" || !data.stocks) {
+      throw new Error("인덱스 형식이 올바르지 않습니다");
+    }
+    IDX = data;
+    LIST = Object.keys(IDX.stocks).map((code) => {
+      const s = IDX.stocks[code];
+      return {code, name: s.name || code, n: (s.events || []).length,
+              key: searchKey(s.name || code)};
+    });
     renderCoverage();
     const q = new URLSearchParams(location.search).get("q");
     if (q) {
-      if (IDX.stocks[q]) selectStock(q);
+      if (has(IDX.stocks, q)) selectStock(q);
       else {
         const c = candidates(q);
         if (c.length) selectStock(c[0].code);
@@ -202,8 +255,11 @@ async function init() {
       }
     }
   } catch (e) {
-    err.textContent = `인덱스 로드 실패: ${e.message}`;
+    err.textContent = `인덱스 로드 실패: ${e.message} (새로고침해 주세요)`;
     err.classList.remove("hidden");
+    document.getElementById("meta").textContent = "데이터를 불러오지 못했습니다";
+    input.placeholder = "데이터를 불러오지 못했습니다";
+    input.disabled = true;   // 검색해도 아무것도 못 찾는 상태 — 헛수고를 막는다
   }
 }
 
@@ -222,12 +278,14 @@ input.addEventListener("keydown", (ev) => {
   if (ev.key === "ArrowDown") { moveSel(1); ev.preventDefault(); }
   else if (ev.key === "ArrowUp") { moveSel(-1); ev.preventDefault(); }
   else if (ev.key === "Enter") {
+    if (!IDX) return;
     const lis = [...document.querySelectorAll("#suggest li[data-code]")];
     const pick = selIdx >= 0 ? lis[selIdx] : lis[0];
     if (pick) selectStock(pick.dataset.code);
     else if (input.value.trim()) showNoResult(input.value.trim());
   } else if (ev.key === "Escape") {
     document.getElementById("suggest").classList.add("hidden");
+    input.setAttribute("aria-expanded", "false");
   }
 });
 document.getElementById("suggest").addEventListener("click", (ev) => {
@@ -235,8 +293,10 @@ document.getElementById("suggest").addEventListener("click", (ev) => {
   if (li) selectStock(li.dataset.code);
 });
 document.addEventListener("click", (ev) => {
-  if (!ev.target.closest(".sbox"))
+  if (!ev.target.closest(".sbox")) {
     document.getElementById("suggest").classList.add("hidden");
+    input.setAttribute("aria-expanded", "false");
+  }
 });
 
 init();
