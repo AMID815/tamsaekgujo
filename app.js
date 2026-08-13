@@ -158,6 +158,7 @@ const isNxtHoursKST = () => inWindowKST(480, 1205);
 // 헤더 티커: 크로스테마 주도주 전광판 — 카드 행과 동일한 3줄 블록이 왼쪽으로 흐름.
 // 내용이 실제로 바뀔 때만 재구성(60초 갱신 시 애니메이션 튐 방지). 속도는 픽셀 기준 일정.
 let tkSig = "";
+let ntcOpen = false;   // 공지 상세 패널 열림 상태(60초 재렌더에도 유지)
 // 무테마 급등주 이력 항목: 급등 중인데 화면에 없는 종목의 과거 특징테마 라벨
 function histRowBody(r) {
   const url = `https://m.stock.naver.com/domestic/stock/${esc(r.code)}/total`;
@@ -209,6 +210,27 @@ function renderTicker(d) {
   track.style.animationDuration = `${Math.max(30, Math.round(half / 75))}s`;
 }
 
+// 공지·경고: 상단바엔 칩만, 상세는 헤더 아래 패널(칩 클릭 토글). 칩 HTML을 반환해
+// #meta에 이어 붙인다(#meta는 매 렌더 교체되므로 클릭은 .top-l에 위임 — 아래 참조).
+function renderNotices(d) {
+  const panel = document.getElementById("ntcPanel");
+  if (!panel) return "";
+  const list = (d.notices || []).filter((n) => n && n.text);
+  if (!list.length) { panel.classList.add("hidden"); ntcOpen = false; return ""; }
+  const lvl = (n) => (n.level === "warn" ? "warn" : "info");
+  panel.innerHTML = list.map((n) => `
+    <div class="ntc-row ${lvl(n)}">
+      <span class="ntc-tag">${esc(n.chip || "공지")}</span>
+      <span class="ntc-txt">${esc(n.text)}</span>
+      <span class="ntc-day">${esc(n.date || "")}</span>
+    </div>`).join("")
+    + `<button type="button" class="ntc-x" aria-label="공지 닫기">✕</button>`;
+  panel.classList.toggle("hidden", !ntcOpen);
+  return " " + list.map((n) => `<span class="ntc-chip ${lvl(n)}" role="button"
+      tabindex="0" aria-expanded="${ntcOpen}" title="눌러서 상세 보기">${esc(n.chip)}</span>`)
+    .join(" ");
+}
+
 function render(d) {
   const meta = document.getElementById("meta");
   const upd = new Date(d.updatedAt);
@@ -220,7 +242,8 @@ function render(d) {
   const hhmmss = `${pad2(upd.getHours())}:${pad2(upd.getMinutes())}:${pad2(upd.getSeconds())}`;
   const statusText = d.marketStatus === "OPEN" ? "OPEN"
     : (d.extOpen && isNxtHoursKST() ? "NXT OPEN" : "CLOSE");
-  meta.innerHTML = `${hhmmss} 기준 · ${esc(statusText)}${stale}${errs}`;
+  const ntc = renderNotices(d);
+  meta.innerHTML = `${hhmmss} 기준 · ${esc(statusText)}${stale}${errs}${ntc}`;
   document.getElementById("cards").innerHTML =
     d.themes.map((t, i) => card(t, i)).join("");
   renderTicker(d);
@@ -238,6 +261,26 @@ async function load() {
     err.classList.remove("hidden");
   }
 }
+
+// 공지 칩 토글 — 칩은 매 렌더 새로 만들어지므로 정적 조상(.top-l)에 위임한다.
+function ntcToggle(open) {
+  ntcOpen = open;
+  document.getElementById("ntcPanel").classList.toggle("hidden", !ntcOpen);
+  document.querySelectorAll(".ntc-chip")
+    .forEach((c) => c.setAttribute("aria-expanded", String(ntcOpen)));
+}
+document.querySelector(".top-l").addEventListener("click", (e) => {
+  if (e.target.closest(".ntc-chip")) ntcToggle(!ntcOpen);
+});
+document.querySelector(".top-l").addEventListener("keydown", (e) => {
+  if ((e.key === "Enter" || e.key === " ") && e.target.closest(".ntc-chip")) {
+    e.preventDefault();
+    ntcToggle(!ntcOpen);
+  }
+});
+document.getElementById("ntcPanel").addEventListener("click", (e) => {
+  if (e.target.closest(".ntc-x")) ntcToggle(false);
+});
 
 load();
 setInterval(load, REFRESH_MS);

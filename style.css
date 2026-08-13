@@ -151,3 +151,24 @@ footer { color: #8a919b; font-size: 11px; padding: 10px 14px; text-align: center
   50%      { box-shadow: 0 0 10px 2px rgba(255,180,60,1); }
 }
 @media (prefers-reduced-motion: reduce) { .tk-news .xcnt { animation: none; } }
+
+/* 상단 공지·경고 — 상단바 인라인 칩 + 클릭 시 헤더 아래 상세 패널(2026-08-13) */
+.ntc-chip { font-size: 11px; font-weight: 800; border-radius: 4px; padding: 1px 7px;
+            cursor: pointer; letter-spacing: .2px; white-space: nowrap; }
+.ntc-chip.warn { background: #ea580c; color: #fff; }
+.ntc-chip.info { background: #e6f7f6; color: #00776f; }
+.ntc-chip:focus-visible { outline: 2px solid #00b1a9; outline-offset: 1px; }
+.ntc-panel { background: #fff; border: 1px solid #e2e6ec; border-radius: 10px;
+             box-shadow: 0 1px 3px rgba(0,0,0,.05); margin-bottom: 10px;
+             padding: 3px 0; position: relative; }
+.ntc-panel.hidden { display: none; }
+.ntc-row { display: flex; align-items: baseline; gap: 8px; padding: 7px 34px 7px 11px; }
+.ntc-row + .ntc-row { border-top: 1px solid #f2f4f7; }
+.ntc-tag { flex: none; font-size: 11px; font-weight: 800; border-radius: 4px; padding: 1px 7px; }
+.ntc-row.warn .ntc-tag { background: #ea580c; color: #fff; }
+.ntc-row.info .ntc-tag { background: #e6f7f6; color: #00776f; }
+.ntc-txt { flex: 1; line-height: 1.55; }
+.ntc-row.warn .ntc-txt { color: #7c2d12; }
+.ntc-day { flex: none; color: #8a919b; font-size: 11px; }
+.ntc-x { position: absolute; top: 3px; right: 5px; background: none; border: 0;
+         color: #8a919b; font-size: 13px; line-height: 1; padding: 5px; cursor: pointer; }
