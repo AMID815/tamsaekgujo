@@ -231,19 +231,41 @@ function renderNotices(d) {
     .join(" ");
 }
 
+// 제목 옆 상태줄이 넘치면 필요한 만큼만 단계적으로 축약한다(폭을 실제로 재므로
+// 칩이 1개든 3개든, 화면이 얼마든 알맞게 줄어든다). 순서는 잃는 정보가 적은 쪽부터:
+// 초 → 장 상태(OPEN/CLOSE) → SYSTEM PAUSED를 Paused로 → 헬리콥터 로고.
+function fitMeta() {
+  const meta = document.getElementById("meta");
+  if (!meta) return;
+  meta.classList.remove("c1", "c2", "c3");
+  document.body.classList.remove("nologo");
+  const steps = [() => meta.classList.add("c1"), () => meta.classList.add("c2"),
+                 () => meta.classList.add("c3"),
+                 () => document.body.classList.add("nologo")];
+  for (const step of steps) {
+    if (meta.scrollWidth <= meta.clientWidth + 1) return;   // 이미 다 들어감
+    step();
+  }
+}
+
 function render(d) {
   const meta = document.getElementById("meta");
   const upd = new Date(d.updatedAt);
   const ageMin = Math.floor((Date.now() - upd.getTime()) / 60000);
   const stale = (ageMin > STALE_MIN && isMarketHoursKST())
-    ? ` <span class="syspaused">⚠ SYSTEM PAUSED</span>` : "";
+    ? ` <span class="syspaused"><span class="mt-long">⚠ SYSTEM PAUSED</span>` +
+      `<span class="mt-short">⚠ Paused</span></span>` : "";
   const errs = d.status && !d.status.ok
     ? ` <span class="stale">⚠ 수집 오류 ${d.status.errors.length}건</span>` : "";
-  const hhmmss = `${pad2(upd.getHours())}:${pad2(upd.getMinutes())}:${pad2(upd.getSeconds())}`;
+  const hhmm = `${pad2(upd.getHours())}:${pad2(upd.getMinutes())}`;
   const statusText = d.marketStatus === "OPEN" ? "OPEN"
     : (d.extOpen && isNxtHoursKST() ? "NXT OPEN" : "CLOSE");
   const ntc = renderNotices(d);
-  meta.innerHTML = `${hhmmss} 기준 · ${esc(statusText)}${stale}${errs}${ntc}`;
+  // 좁은 화면에서 제목 옆 한 줄에 다 들어가도록, 폭이 모자라면 fitMeta가 단계적으로
+  // 축약한다: 초 → OPEN/CLOSE → SYSTEM PAUSED를 Paused로.
+  meta.innerHTML = `${hhmm}<span class="mt-sec">:${pad2(upd.getSeconds())}</span> 기준`
+    + `<span class="mt-status"> · ${esc(statusText)}</span>${stale}${errs}${ntc}`;
+  fitMeta();
   document.getElementById("cards").innerHTML =
     d.themes.map((t, i) => card(t, i)).join("");
   renderTicker(d);
@@ -281,6 +303,8 @@ document.querySelector(".top-l").addEventListener("keydown", (e) => {
 document.getElementById("ntcPanel").addEventListener("click", (e) => {
   if (e.target.closest(".ntc-x")) ntcToggle(false);
 });
+
+window.addEventListener("resize", fitMeta);   // 회전·창 크기 변경 시 축약 재계산
 
 load();
 setInterval(load, REFRESH_MS);
