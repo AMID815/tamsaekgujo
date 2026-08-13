@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex">
 <title>주도주 오디세우스 — 테마탐색구조대</title>
 <link rel="stylesheet" href="style.css?v=39">
-<link rel="stylesheet" href="hubosaeng.css?v=2">
+<link rel="stylesheet" href="hubosaeng.css?v=3">
 </head>
 <body>
 <header class="top">
@@ -21,11 +21,15 @@
 </header>
 <main class="finder-main">
   <div class="sbox">
+    <label class="sr-only" for="q">종목명 또는 6자리 코드 검색</label>
     <input id="q" type="search" placeholder="종목명 또는 6자리 코드 검색"
-           autocomplete="off" autocapitalize="off" spellcheck="false">
-    <ul id="suggest" class="suggest hidden"></ul>
+           autocomplete="off" autocapitalize="off" spellcheck="false"
+           role="combobox" aria-expanded="false" aria-controls="suggest"
+           aria-autocomplete="list">
+    <ul id="suggest" class="suggest hidden" role="listbox"
+        aria-label="검색 후보"></ul>
   </div>
-  <section id="result" class="hidden">
+  <section id="result" class="hidden" aria-live="polite">
     <div class="rhead">
       <h2 id="rname"></h2>
       <span id="rmeta"></span>
@@ -35,9 +39,9 @@
   </section>
   <p id="empty" class="empty">종목을 검색하면 그동안 어떤 테마로 분류돼 왔는지
     소스별(네프콘·주도섹터·뉴스·대시보드) 타임라인으로 보여줍니다.</p>
-  <p id="err" class="hidden"></p>
+  <p id="err" class="hidden" role="alert"></p>
 </main>
 <footer id="cov">테마탐색구조대 수집 데이터 기반 · 투자 판단 참고용</footer>
-<script src="hubosaeng.js?v=2"></script>
+<script src="hubosaeng.js?v=3"></script>
 </body>
 </html>
