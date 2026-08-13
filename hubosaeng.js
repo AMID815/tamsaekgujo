@@ -1,5 +1,5 @@
 "use strict";
-/* 테마파인더 — 종목 검색 → 테마 소속 이력 타임라인.
+/* 주도주 오디세우스 — 종목 검색 → 테마 소속 이력 타임라인.
    데이터: 공개 repo data 브랜치의 stock_theme_index.json (매일 1회 갱신). */
 
 function indexUrl() {
