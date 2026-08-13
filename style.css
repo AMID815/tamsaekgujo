@@ -5,8 +5,10 @@ body { margin: 0; font-family: "Malgun Gothic", system-ui, sans-serif;
 .top { display: flex; justify-content: space-between; align-items: center;
        flex-wrap: wrap; gap: 8px; padding: 9px 14px; background: #fff;
        border-bottom: 1px solid #dde1e7; position: sticky; top: 0; z-index: 5; }
-.top-l { display: flex; align-items: baseline; gap: 10px; }
-h1 { font-size: 17px; margin: 0; display: flex; align-items: center; gap: 6px; }
+/* 좁은 화면에선 제목을 쪼개지 말고 메타·칩을 다음 줄로 내린다("…구조/대" 방지) */
+.top-l { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+h1 { font-size: 17px; margin: 0; display: flex; align-items: center; gap: 6px;
+     white-space: nowrap; flex: none; }
 .logo { flex: none; transform-origin: 50% 62%;
         animation: heliFly 2.4s ease-in-out infinite; }              /* 호버·뱅킹 */
 .rotor { transform-box: fill-box; transform-origin: center;
