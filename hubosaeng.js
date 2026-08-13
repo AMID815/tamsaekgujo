@@ -33,6 +33,8 @@ function fmtDW(d) {
 let IDX = null;   // {built, coverage, stocks}
 let LIST = [];    // [{code, name, n}] — 자동완성용 (인덱스 내 이름)
 let selIdx = -1;  // 자동완성 키보드 선택 위치
+let picked = false;  // 검색 확정 상태 — 다시 포커스하면 지우고 새로 입력받는다
+                     // (직접 친 미확정 글자는 탭 전환 등으로 포커스가 돌아와도 보존)
 
 // ── 검색/자동완성 ───────────────────────────────────────────────────
 function candidates(q) {
@@ -125,6 +127,7 @@ function selectStock(code) {
     ([d, evs]) => `<div class="tl-day"><div class="tl-date">${fmtDW(d)}</div>` +
       `<ul class="tl-ev">${evs.map(eventRow).join("")}</ul></div>`).join("");
   document.getElementById("result").classList.remove("hidden");
+  picked = true;
   history.replaceState(null, "", `?q=${code}`);
 }
 
@@ -162,8 +165,16 @@ async function init() {
 }
 
 const input = document.getElementById("q");
-input.addEventListener("input", () => renderSuggest(candidates(input.value)));
-input.addEventListener("focus", () => renderSuggest(candidates(input.value)));
+input.addEventListener("input", () => {
+  picked = false;
+  renderSuggest(candidates(input.value));
+});
+// 검색 확정 후 다시 커서를 두면 이전 종목명을 지워 바로 새로 칠 수 있게 한다
+// (표시 중인 타임라인은 그대로 둔다)
+input.addEventListener("focus", () => {
+  if (picked) { input.value = ""; picked = false; }
+  renderSuggest(candidates(input.value));
+});
 input.addEventListener("keydown", (ev) => {
   if (ev.key === "ArrowDown") { moveSel(1); ev.preventDefault(); }
   else if (ev.key === "ArrowUp") { moveSel(-1); ev.preventDefault(); }
