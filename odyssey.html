@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>대장주 Odyssey — 테마탐색구조대</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- 타이틀 서체: DS Wallau(루돌프 코흐 Wallau 원전, 배포자 CDN에서 임베드).
+     CDN이 죽어도 UnifrakturCook(구글)으로 떨어져 블랙레터 인상은 유지된다.
+     한글 '대장주'는 text= 부분집합이라 2KB 수준만 내려온다. -->
+<link rel="stylesheet" href="https://fonts.cdnfonts.com/css/ds-wallau">
+<!-- text= 는 요청 단위로 적용되므로 반드시 폰트별로 나눠 요청한다.
+     한 요청에 묶으면 폴백 서체까지 '대장주'로 부분집합돼 영문 글리프가 사라진다. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@900&text=%EB%8C%80%EC%9E%A5%EC%A3%BC&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=UnifrakturCook:wght@700&text=Odysse&display=swap">
+<link rel="stylesheet" href="style.css?v=39">
+<link rel="stylesheet" href="odyssey.css?v=4">
+</head>
+<body>
+<header class="top">
+  <div class="top-l">
+    <h1><span class="t-kor">대장주</span> <span class="t-ody">Odyssey</span></h1>
+    <span id="meta">인덱스 불러오는 중…</span>
+  </div>
+  <a class="back-link" href="./" title="테마탐색구조대 대시보드로 이동">
+    <svg class="logo" viewBox="0 0 44 26" width="34" height="20" fill="none" stroke="#e5342b" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="rotor"><path d="M3 6.5Q22 2 41 6.5"/><path d="M6 7 41 5.4"/></g><path d="M21 6.4 22 9.7"/><path d="M4 17 7.2 11 24 9.6Q28 9.4 30 11L41 7.4 41.7 9.1 30.6 13 26.6 16 9 17.6Z"/><g class="trotor"><path d="M40.2 5 42.7 9.2"/></g><path d="M33 10.2 37.2 8.7"/><path d="M8 11.5 11 11M7.6 13.2 9.2 11.3"/><path d="M13 17.4 12.6 20M22 16.9 22 20"/><circle cx="12.5" cy="20.7" r="0.9"/><circle cx="22" cy="20.7" r="0.9"/></svg>
+    <span>테마탐색구조대</span>
+  </a>
+</header>
+<main class="finder-main">
+  <div class="sbox">
+    <label class="sr-only" for="q">종목명 또는 6자리 코드 검색</label>
+    <input id="q" type="search" placeholder="종목명 또는 6자리 코드 검색"
+           autocomplete="off" autocapitalize="off" spellcheck="false"
+           role="combobox" aria-expanded="false" aria-controls="suggest"
+           aria-autocomplete="list">
+    <ul id="suggest" class="suggest hidden" role="listbox"
+        aria-label="검색 후보"></ul>
+  </div>
+  <section id="result" class="hidden" aria-live="polite">
+    <div class="rhead">
+      <h2 id="rname"></h2>
+      <span id="rmeta"></span>
+    </div>
+    <div id="rchips" class="chips"></div>
+    <div id="timeline" class="tl"></div>
+  </section>
+  <p id="empty" class="empty">종목을 검색하면 그동안 어떤 테마로 분류돼 왔는지
+    소스별(네프콘·주도섹터·뉴스·대시보드) 타임라인으로 보여줍니다.</p>
+  <p id="err" class="hidden" role="alert"></p>
+</main>
+<footer id="cov">테마탐색구조대 수집 데이터 기반 · 투자 판단 참고용</footer>
+<script src="odyssey.js?v=4"></script>
+</body>
+</html>
